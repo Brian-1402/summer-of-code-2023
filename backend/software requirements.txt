@@ -1,1 +1,1 @@
-git
+python3-venv python3-dev libpq-dev postgresql postgresql-contrib nginx curl git
