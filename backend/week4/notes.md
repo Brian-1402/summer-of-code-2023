@@ -37,3 +37,5 @@ PublicIP Address:
 - [This article](https://medium.com/good-robot/use-visual-studio-code-remote-ssh-sftp-without-crashing-your-server-a1dc2ef0936d) shows that there are some built-in extensions which use a lot of resources and could be unnecessary, like the typescript support. This info could be useful in the future.
 
 - When the VS Code server starts to hang and you're not able to access even normal ssh, try killing the VS Code server instance using [this command](https://stackoverflow.com/a/57494961).
+
+- Now decided to fully shift development to this VS Code remote ssh workspace.
