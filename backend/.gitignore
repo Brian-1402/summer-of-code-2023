@@ -7,4 +7,11 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+/venv
+/env
 *.db
+
+__pycache__
+
+.env
+connections.txt

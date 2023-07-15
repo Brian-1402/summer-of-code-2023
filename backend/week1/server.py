@@ -19,61 +19,19 @@ class HandlerClass(http.server.BaseHTTPRequestHandler):
 
         path = self.path
 
+        print(path)
         if path == "/":
             self.send_response(200)
-            self.send_header("Content-type", "text/html")
             f = open(
                 abs_path("static\\index.html"),
                 "r",
             )
             page = f.read()
+            self.send_header("Content-type", "text/html")
             self.send_header("Content-length", len(page))
             self.end_headers()
             self.wfile.write(page.encode())
             f.close()
-
-        elif path == "/init":
-            init_db(conn)
-            message = "table reseted"
-            self.send_response(201)
-            self.send_header("Content-type", "text/plain")
-            self.send_header("Content-length", len(message))
-            self.end_headers()
-            self.wfile.write(message.encode())
-
-        elif path[:8] == "/create/":
-            val = path[8:]
-            i = val.find("/")
-            if i == -1:
-                self.send_response_only(404)
-                self.end_headers()
-            else:
-                spl = (val[:i], val[i + 1 :])
-                message = "error"
-                if len(spl) == 2:
-                    if spl[0] != "" and spl[1] != "":
-                        short, dest = spl
-                        if (
-                            len(
-                                cur.execute(
-                                    "SELECT * FROM urls WHERE shortened = ?", (short,)
-                                ).fetchall()
-                            )
-                            > 0
-                        ):
-                            message = "shortened url already exists, try another one"
-                        else:
-                            cur.execute(
-                                "INSERT INTO urls (shortened, unshortened) VALUES (?, ?)",
-                                tuple(spl),
-                            )
-                            message = "Added to table"
-
-                self.send_response(201)
-                self.send_header("Content-type", "text/plain")
-                self.send_header("Content-length", len(message))
-                self.end_headers()
-                self.wfile.write(message.encode())
 
         elif path[:10] == "/redirect/":
             short = path[10:]
@@ -83,7 +41,7 @@ class HandlerClass(http.server.BaseHTTPRequestHandler):
             if result:
                 message = "Redirecting"
                 redirect = result[0]
-                self.send_response(302)
+                self.send_response(302, "Found")
                 self.send_header("Location", redirect)
                 self.send_header("Content-type", "text/plain")
                 self.send_header("Content-length", len(message))
@@ -96,12 +54,21 @@ class HandlerClass(http.server.BaseHTTPRequestHandler):
                 self.send_header("Content-length", len(message))
                 self.end_headers()
                 self.wfile.write(message.encode())
-
+        # for testing purposes, reset the entire database
+        elif path == "/init":
+            init_db(conn)
+            message = "table reseted"
+            self.send_response(201, "Created")
+            self.send_header("Content-type", "text/plain")
+            self.send_header("Content-length", len(message))
+            self.end_headers()
+            self.wfile.write(message.encode())
+        # for testing purposes, see all values in the database
         elif path == "/seeall":
             message = str(cur.execute("select * from urls").fetchall())
             self.send_response(200)
-            # self.send_header("Content-type", "text/plain")
-            # self.send_header("Content-length", len(message))
+            self.send_header("Content-type", "text/plain")
+            self.send_header("Content-length", len(message))
             self.end_headers()
             self.wfile.write(message.encode())
 
@@ -109,8 +76,71 @@ class HandlerClass(http.server.BaseHTTPRequestHandler):
             # This is an unknown path.
             message = "404 Not found"
             self.send_response(404)
-            # self.send_header("Content-type", "text/plain")
-            # self.send_header("Content-length", len(message))
+            self.send_header("Content-type", "text/plain")
+            self.send_header("Content-length", len(message))
+            self.end_headers()
+            self.wfile.write(message.encode())
+
+        conn.commit()
+        conn.close()
+
+    def do_POST(self):
+        conn = sqlite3.connect(abs_path("url.db"))
+        cur = conn.cursor()
+
+        path = self.path
+
+        if path[:8] == "/create/":
+            val = path[8:]
+            i = val.find("/")
+            code = 201
+            message = "Added to table"
+            if i == -1:
+                code = 400
+                message = 'Error: missing "/" between <short_code> and <destination>.'
+            else:
+                spl = (val[:i], val[i + 1 :])
+                if spl[0] != "" and spl[1] != "":
+                    short, dest = spl
+                    if (
+                        len(
+                            cur.execute(
+                                "SELECT * FROM urls WHERE shortened = ?", (short,)
+                            ).fetchall()
+                        )
+                        > 0
+                    ):
+                        code = 409
+                        message = "Error: short code is already used, try another one."
+                    else:
+                        cur.execute(
+                            "INSERT INTO urls (shortened, unshortened) VALUES (?, ?)",
+                            tuple(spl),
+                        )
+                        code = 201
+                        message = "Added to table"
+                else:
+                    code = 400
+                    message = "short_code or destination url missing"
+            if code == 201:
+                self.send_response(201, "Created")
+                self.send_header("Content-type", "text/plain")
+                self.send_header("Content-length", len(message))
+                self.end_headers()
+                self.wfile.write(message.encode())
+            else:
+                self.send_response(code)
+                self.send_header("Content-type", "text/plain")
+                self.send_header("Content-length", len(message))
+                self.end_headers()
+                self.wfile.write(message.encode())
+
+        else:
+            # This is an unknown path.
+            message = "404 Not found"
+            self.send_response(404)
+            self.send_header("Content-type", "text/plain")
+            self.send_header("Content-length", len(message))
             self.end_headers()
             self.wfile.write(message.encode())
 

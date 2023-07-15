@@ -1,10 +1,10 @@
 ## Immediate
 
-- Check out week 2 topics, while still trying to refine week1 content like adding error handling etc.
+# Week 2
 
-- Find out why they need the create endpoint to be a POST request and how to make a browser send such a request and how to respond to a POST request. It might require using CGIHTTPHandler, so in that case, see if redirects can be done.
+- I got an idea, what if we try to install our local folder as a package, but only install in the virtualenv. This avoids complications of import statements not working as expected/having to add the working folder to PATH which brings down portability/modularity. [Link](https://stackoverflow.com/q/52546403)
 
-## Later
+# Week 1
 
 ### General
 
